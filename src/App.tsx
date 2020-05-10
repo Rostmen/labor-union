@@ -1,12 +1,20 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
-import LoginForm from './components/login-form'
+import React, { useCallback } from 'react'
+import 'src/App.css'
+import LoginFormOldie from 'src/components/login-form'
+import LoginForm, { LoginFormNoClass2 } from 'src/components/LoginForm'
 
 function App() {
+  const someAbstractSend = useCallback((d: FormData) => {
+    // d -> Form
+  }, [])
+
   return (
-    <LoginForm />
-  );
+    <>
+      <LoginFormOldie />
+      <LoginForm />
+      <LoginFormNoClass2 onSubmit={someAbstractSend} />
+    </>
+  )
 }
 
-export default App;
+export default App
