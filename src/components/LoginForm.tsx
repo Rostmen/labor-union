@@ -1,68 +1,72 @@
-import React, {
-  ChangeEvent,
-  useCallback,
-  useState,
-  ReactElement,
-  useRef,
-  SyntheticEvent,
-} from 'react'
-import { MinField } from 'src/components/Field'
+import React from 'react'
+import * as yup from 'yup'
+import { withFormik, FormikProps, Form, Field } from 'formik'
 
-// you should always name react components UpperCased, framework, won't work with lowercase
-// you should name MyComponentFile.tsx - also uppercased, convention
-const LoginFormNoClass = () => {
-  const [phone, setPhone] = useState('')
-  const [pass, setPass] = useState('')
+// Shape of form values
+interface FormValues {
+  email: string
+  password: string
+}
 
-  // you always want to "memoize" these functions with useCallback
-  // if you move input into `Field` component, you can encapsulate repitative logic
-  const handleSubmit = useCallback(() => console.log('submitting'), [])
-  const handleInputChange = useCallback(
-    changeFn => (e: ChangeEvent<HTMLInputElement>) => changeFn(e.target.value),
-    [],
-  )
-  const setPhoneValue = handleInputChange(setPhone)
-  const setPassValue = handleInputChange(setPass)
+interface OtherProps {
+  message?: string
+}
 
+// this is just an example from Formik website
+// Aside: You may see InjectedFormikProps<OtherProps, FormValues> instead of what comes below in older code.. InjectedFormikProps was artifact of when Formik only exported a HoC. It is also less flexible as it MUST wrap all props (it passes them through).
+const InnerForm = (props: OtherProps & FormikProps<FormValues>) => {
+  const { touched, errors, isSubmitting, message } = props
   return (
-    <form onSubmit={handleSubmit}>
-      <label>
-        Phone:
-        <input type="text" value={phone} onChange={setPhoneValue} />
-      </label>
-      <label>
-        Password:
-        <input type="password" value={pass} onChange={setPassValue} />
-      </label>
-      <input onSubmit={handleSubmit} type="submit" value="Submit" />
-    </form>
+    <Form>
+      <h1>{message}</h1>
+      <Field type="email" name="email" />
+      {touched.email && errors.email && <div>{errors.email}</div>}
+
+      <Field type="password" name="password" />
+      {touched.password && errors.password && <div>{errors.password}</div>}
+
+      <button type="submit" disabled={isSubmitting}>
+        Submit
+      </button>
+
+      {isSubmitting ? <div>Submitting loader</div> : null}
+    </Form>
   )
 }
 
-export default LoginFormNoClass
-
-type FormProps = {
-  onSubmit: (d: FormData) => void
+// The type of props MyForm receives
+interface MyFormProps {
+  initialEmail?: string
+  message?: string // if this passed all the way through you might do this or make a union type
 }
-export const LoginFormNoClass2 = (props: FormProps): ReactElement => {
-  const formEl = useRef<HTMLFormElement>(null)
-  const handleSubmit = useCallback((e: SyntheticEvent) => {
-    e.preventDefault()
-    // do something ... but you have to parse the data etc
-    // try this lib https://jaredpalmer.com/formik
-  }, [])
 
-  return (
-    <form onSubmit={handleSubmit} ref={formEl}>
-      <label>
-        Phone:
-        <MinField type="text" />
-      </label>
-      <label>
-        Password:
-        <MinField type="password" />
-      </label>
-      <input onSubmit={handleSubmit} type="submit" value="Submit" />
-    </form>
-  )
-}
+// Wrap our form with the withFormik HoC
+const MyForm = withFormik<MyFormProps, FormValues>({
+  validationSchema: yup.object().shape({
+    password: yup.string().required(),
+    email: yup.string().email().required(),
+  }),
+  // Transform outer props into form values
+  mapPropsToValues: props => {
+    return {
+      email: props.initialEmail || '',
+      password: '',
+    }
+  },
+
+  handleSubmit: values => {
+    // let's imagine we send values somewhere
+    return fetch('https://reqres.in/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // 'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: JSON.stringify(values),
+    })
+      .then(response => response.json())
+      .then(data => console.log(data))
+  },
+})(InnerForm)
+
+export default MyForm
