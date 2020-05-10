@@ -4,7 +4,7 @@ import { withFormik, FormikProps, Form, Field } from 'formik'
 
 // Shape of form values
 interface FormValues {
-  email: string
+  phone: string
   password: string
 }
 
@@ -12,15 +12,13 @@ interface OtherProps {
   message?: string
 }
 
-// this is just an example from Formik website
-// Aside: You may see InjectedFormikProps<OtherProps, FormValues> instead of what comes below in older code.. InjectedFormikProps was artifact of when Formik only exported a HoC. It is also less flexible as it MUST wrap all props (it passes them through).
 const InnerForm = (props: OtherProps & FormikProps<FormValues>) => {
   const { touched, errors, isSubmitting, message } = props
   return (
     <Form>
       <h1>{message}</h1>
-      <Field type="email" name="email" />
-      {touched.email && errors.email && <div>{errors.email}</div>}
+      <Field type="phone" name="phone" />
+      {touched.phone && errors.phone && <div>{errors.phone}</div>}
 
       <Field type="password" name="password" />
       {touched.password && errors.password && <div>{errors.password}</div>}
@@ -36,20 +34,20 @@ const InnerForm = (props: OtherProps & FormikProps<FormValues>) => {
 
 // The type of props MyForm receives
 interface MyFormProps {
-  initialEmail?: string
+  initialPhone?: string
   message?: string // if this passed all the way through you might do this or make a union type
 }
 
-// Wrap our form with the withFormik HoC
+const phoneNumberRegExp = RegExp('((\\+)?\\b(38)?(0[\\d]{2}))([\\d-]{5,8})([\\d]{2})')
 const MyForm = withFormik<MyFormProps, FormValues>({
   validationSchema: yup.object().shape({
+    phone: yup.string().matches(phoneNumberRegExp, 'Incorrect phone number').required(),
     password: yup.string().required(),
-    email: yup.string().email().required(),
   }),
   // Transform outer props into form values
   mapPropsToValues: props => {
     return {
-      email: props.initialEmail || '',
+      phone: props.initialPhone || '',
       password: '',
     }
   },
